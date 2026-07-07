@@ -40,12 +40,12 @@ public class UrlService {
     private final RateLimiterService rateLimiterService;
 
     public UrlService(UrlMappingRepository urlMappingRepository,
-                      ClickEventRepository clickEventRepository,
-                      UrlEncodingService urlEncodingService,
-                      UserRepository userRepository,
-                      UrlCacheService urlCacheService,
-                      UrlRedirectAuditService urlRedirectAuditService,
-                      RateLimiterService rateLimiterService) {
+            ClickEventRepository clickEventRepository,
+            UrlEncodingService urlEncodingService,
+            UserRepository userRepository,
+            UrlCacheService urlCacheService,
+            UrlRedirectAuditService urlRedirectAuditService,
+            RateLimiterService rateLimiterService) {
         this.urlMappingRepository = urlMappingRepository;
         this.clickEventRepository = clickEventRepository;
         this.urlEncodingService = urlEncodingService;
@@ -131,6 +131,7 @@ public class UrlService {
     public void deleteShortUrl(String shortCode) {
         UrlMapping mapping = urlMappingRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException("Short URL not found: " + shortCode));
+        clickEventRepository.deleteByUrlMapping(mapping);
         urlMappingRepository.delete(mapping);
         urlCacheService.evict(shortCode);
     }
@@ -140,14 +141,16 @@ public class UrlService {
             throw new InvalidAliasException("Custom alias must contain only letters, numbers, hyphen, or underscore");
         }
 
-        if (urlMappingRepository.existsByShortCode(customAlias) || urlMappingRepository.existsByCustomAlias(customAlias)) {
+        if (urlMappingRepository.existsByShortCode(customAlias)
+                || urlMappingRepository.existsByCustomAlias(customAlias)) {
             throw new InvalidAliasException("Custom alias is already in use");
         }
     }
 
     private Optional<User> currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
 
