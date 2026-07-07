@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   const fetchUrls = async () => {
     try {
-      const response = await api.get('/api/urls');
+      const response = await api.get('/urls');
       setUrls(response.data);
     } catch (err) {
       setError('Could not load your URLs.');
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/urls', {
+      await api.post('/urls', {
         longUrl,
         customAlias: customAlias || null,
       });
@@ -51,7 +51,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (shortCode) => {
     try {
-      await api.delete(`/api/urls/${shortCode}`);
+      await api.delete(`/urls/${shortCode}`);
       fetchUrls();
     } catch (err) {
       setError('Could not delete that URL.');
@@ -60,7 +60,7 @@ export default function DashboardPage() {
 
   const downloadQrCode = async (shortCode) => {
     try {
-      const res = await api.get(`/api/urls/${shortCode}/qrcode`, { responseType: 'blob' });
+      const res = await api.get(`/urls/${shortCode}/qrcode`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;

@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await api.post('/api/auth/login', form);
+      const response = await api.post('/auth/login', form);
       login({ token: response.data.token, user: { email: form.email } });
       navigate('/dashboard', { replace: true });
     } catch (requestError) {

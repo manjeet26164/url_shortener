@@ -14,19 +14,19 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
+  event.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      await api.post('/api/auth/register', form);
-      navigate('/login', { replace: true, state: { message: 'Registration successful. Please sign in.' } });
-    } catch (requestError) {
-      setError(requestError?.response?.data?.detail || requestError?.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await api.post('/auth/register', form);
+    navigate('/login', { replace: true, state: { message: 'Registration successful. Please sign in.' } });
+  } catch (requestError) {
+    setError(requestError?.response?.data?.detail || requestError?.response?.data?.message || 'Registration failed');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="auth-shell">
