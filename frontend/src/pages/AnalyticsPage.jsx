@@ -32,38 +32,44 @@ export default function AnalyticsPage() {
     fetchAnalytics();
   }, [shortCode]);
 
-  if (loading) return <p>Loading analytics...</p>;
-  if (error) return <p className="form-error">{error}</p>;
-  if (!analytics) return null;
-
   return (
-    <main className="dashboard-shell">
-      <section className="dashboard-card">
-        <button type="button" onClick={() => navigate('/dashboard')}>
+    <main className="dash-shell">
+      <div className="dash-topbar">
+        <div className="glass-logo">
+          <span className="glass-logo-icon">🔗</span>
+          <span>SHORTLINK</span>
+        </div>
+        <button className="dash-btn" type="button" onClick={() => navigate('/dashboard')}>
           &larr; Back to dashboard
         </button>
-        <h1>Analytics for /{analytics.shortCode}</h1>
-        <p>
-          <strong>Original URL:</strong> {analytics.longUrl}
-        </p>
-        <p>
-          <strong>Total Clicks:</strong> {analytics.totalClicks}
-        </p>
+      </div>
 
-        <h2>Clicks by day</h2>
-        {analytics.clicksByDay.length === 0 ? (
-          <p>No clicks recorded yet.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.clicksByDay}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#4f46e5" />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+      <section className="dash-card">
+        {loading ? <p>Loading analytics...</p> : null}
+        {error ? <div className="glass-error">{error}</div> : null}
+
+        {analytics ? (
+          <>
+            <h1>Analytics for /{analytics.shortCode}</h1>
+            <p><strong>Original URL:</strong> {analytics.longUrl}</p>
+            <p><strong>Total clicks:</strong> {analytics.totalClicks}</p>
+
+            <h2>Clicks by day</h2>
+            {analytics.clicksByDay.length === 0 ? (
+              <p>No clicks recorded yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics.clicksByDay}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.2)" />
+                  <XAxis dataKey="date" stroke="#e0e7ff" />
+                  <YAxis allowDecimals={false} stroke="#e0e7ff" />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#22d3ee" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </>
+        ) : null}
       </section>
     </main>
   );

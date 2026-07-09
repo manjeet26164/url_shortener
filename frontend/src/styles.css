@@ -1,123 +1,279 @@
-:root {
-  color-scheme: light;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #1f2937;
-  background: #f3f4f6;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  min-height: 100%;
-  margin: 0;
-}
-
-body {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #e2e8f0 100%);
-}
-
-a {
-  color: #2563eb;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-.auth-shell,
-.dashboard-shell {
+.glass-page {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%);
 }
 
-.auth-card,
-.dashboard-card {
+.glass-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.glass-blob--1 {
+  width: 340px;
+  height: 340px;
+  top: -80px;
+  left: -80px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.glass-blob--2 {
+  width: 300px;
+  height: 300px;
+  bottom: -60px;
+  right: -60px;
+  background: rgba(34, 211, 238, 0.35);
+}
+
+.glass-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.glass-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.glass-logo-icon {
+  font-size: 1.5rem;
+}
+
+.glass-card {
+  position: relative;
   width: min(100%, 420px);
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.1);
-  padding: 32px;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  padding: 40px;
+  backdrop-filter: blur(16px);
+  color: #fff;
 }
 
-.auth-card h1,
-.dashboard-card h1 {
+.glass-card h1 {
   margin: 0 0 8px;
-  font-size: 2rem;
+  font-size: 2.1rem;
 }
 
-.auth-card p,
-.dashboard-card p {
-  margin: 0 0 20px;
-  color: #475569;
+.glass-card p {
+  margin: 0 0 28px;
+  color: #e0e7ff;
+  font-size: 1.05rem;
 }
 
-.auth-form {
+.glass-form {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
-.auth-form label {
+.glass-form label {
   display: grid;
   gap: 8px;
-  font-size: 0.95rem;
-  color: #334155;
+  font-size: 1rem;
+  color: #e0e7ff;
 }
 
-.auth-form input {
+.glass-form input {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 12px;
-  padding: 12px 14px;
-  background: #fff;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.05rem;
 }
 
-.auth-form input:focus {
-  outline: 2px solid #93c5fd;
-  border-color: #60a5fa;
+.glass-form input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.auth-form button,
-.dashboard-card button {
+.glass-form input:focus {
+  outline: none;
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.glass-form button {
   border: 0;
   border-radius: 12px;
-  padding: 12px 16px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
+  padding: 14px 16px;
+  background: #fff;
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 1.05rem;
   cursor: pointer;
 }
 
-.auth-form button:disabled {
+.glass-form button:disabled {
   opacity: 0.7;
   cursor: wait;
 }
 
-.form-error {
+.glass-error {
   border-radius: 12px;
-  background: #fef2f2;
+  background: rgba(254, 226, 226, 0.9);
   color: #b91c1c;
-  padding: 12px 14px;
-  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  font-size: 0.85rem;
 }
 
-.auth-footer {
+.glass-footer {
   margin-top: 20px;
   text-align: center;
+  font-size: 0.95rem;
+  color: #e0e7ff;
+}
+
+.dash-shell {
+  min-height: 100vh;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%);
+}
+
+.dash-topbar {
+  max-width: 1100px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.dash-topbar .glass-logo {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.dash-btn {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dash-card {
+  max-width: 1100px;
+  margin: 0 auto 24px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  padding: 28px;
+  backdrop-filter: blur(16px);
+  color: #fff;
+}
+
+.dash-card h1,
+.dash-card h2 {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+}
+
+.dash-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.dash-form-row label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #e0e7ff;
+  flex: 1;
+  min-width: 200px;
+}
+
+.dash-form-row input {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.dash-form-row button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  background: #fff;
+  color: #4f46e5;
+  font-weight: 700;
+  cursor: pointer;
+  height: 44px;
+}
+
+.dash-table-wrap {
+  overflow-x: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.dash-table th {
+  text-align: left;
+  padding: 10px 12px;
+  color: #e0e7ff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+}
+
+.dash-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  vertical-align: middle;
+  max-width: 260px;
+  overflow-wrap: break-word;
+}
+
+.dash-table a {
+  color: #fff;
+  font-weight: 600;
+}
+
+.dash-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dash-actions button:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.glass-footer a {
+  color: #fff;
+  font-weight: 700;
 }

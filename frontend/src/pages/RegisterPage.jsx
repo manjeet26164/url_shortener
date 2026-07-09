@@ -14,48 +14,58 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async (event) => {
-  event.preventDefault();
-  setLoading(true);
-  setError('');
+    event.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-    await api.post('/auth/register', form);
-    navigate('/login', { replace: true, state: { message: 'Registration successful. Please sign in.' } });
-  } catch (requestError) {
-    setError(requestError?.response?.data?.detail || requestError?.response?.data?.message || 'Registration failed');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await api.post('/auth/register', form);
+      navigate('/login', { replace: true, state: { message: 'Registration successful. Please sign in.' } });
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || requestError?.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        <h1>Create account</h1>
-        <p>Register to start shortening URLs.</p>
+    <main className="glass-page">
+      <div className="glass-blob glass-blob--1" />
+      <div className="glass-blob glass-blob--2" />
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input name="email" type="email" value={form.email} onChange={handleChange} required />
-          </label>
+      <div className="glass-column">
+        <div className="glass-logo">
+          <span className="glass-logo-icon">🔗</span>
+          <span>SHORTLINK</span>
+        </div>
 
-          <label>
-            Password
-            <input name="password" type="password" value={form.password} onChange={handleChange} required />
-          </label>
+        <div className="glass-card">
+          <h1>Create account</h1>
+          <p>Register to start shortening URLs</p>
 
-          {error ? <div className="form-error">{error}</div> : null}
+          <form className="glass-form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input name="email" type="email" placeholder="name@company.com" value={form.email} onChange={handleChange} required />
+            </label>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
-        </form>
+            <label>
+              Password
+              <input name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
+            </label>
 
-        <p className="auth-footer">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </p>
-      </section>
+            {error ? <div className="glass-error">{error}</div> : null}
+
+            <button type="submit" disabled={loading}>
+              {loading ? 'Creating account...' : 'Register'}
+            </button>
+          </form>
+
+          <p className="glass-footer">
+            Already have an account? <Link to="/login">Sign in</Link>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }

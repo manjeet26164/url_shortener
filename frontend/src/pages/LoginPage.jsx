@@ -32,33 +32,43 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        <h1>Sign in</h1>
-        <p>Access your URL dashboard.</p>
+    <main className="glass-page">
+      <div className="glass-blob glass-blob--1" />
+      <div className="glass-blob glass-blob--2" />
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input name="email" type="email" value={form.email} onChange={handleChange} required />
-          </label>
+      <div className="glass-column">
+        <div className="glass-logo">
+          <span className="glass-logo-icon">🔗</span>
+          <span>SHORTLINK</span>
+        </div>
 
-          <label>
-            Password
-            <input name="password" type="password" value={form.password} onChange={handleChange} required />
-          </label>
+        <div className="glass-card">
+          <h1>Welcome back</h1>
+          <p>Sign in to manage your links</p>
 
-          {error ? <div className="form-error">{error}</div> : null}
+          <form className="glass-form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input name="email" type="email" placeholder="name@company.com" value={form.email} onChange={handleChange} required />
+            </label>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+            <label>
+              Password
+              <input name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
+            </label>
 
-        <p className="auth-footer">
-          No account yet? <Link to="/register">Register</Link>
-        </p>
-      </section>
+            {error ? <div className="glass-error">{error}</div> : null}
+
+            <button type="submit" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+
+          <p className="glass-footer">
+            No account? <Link to="/register">Register</Link>
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
