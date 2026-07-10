@@ -1,6 +1,7 @@
 package com.urlshortener.service;
 
 import com.urlshortener.dto.AnalyticsResponse;
+import com.urlshortener.dto.BreakdownItem;
 import com.urlshortener.dto.DailyClickCount;
 import com.urlshortener.entity.UrlMapping;
 import com.urlshortener.exception.UrlNotFoundException;
@@ -36,7 +37,7 @@ public class AnalyticsService {
 
         List<DailyClickCount> clicksByDay = rawResults.stream()
                 .map(row -> {
-                    LocalDate date = ((Date) row[0]).toLocalDate();
+                    LocalDate date = toLocalDate(row[0]);
                     long count = ((Number) row[1]).longValue();
                     return new DailyClickCount(date, count);
                 })
@@ -44,6 +45,30 @@ public class AnalyticsService {
 
         long totalClicks = mapping.getClickCount() == null ? 0L : mapping.getClickCount();
 
-        return new AnalyticsResponse(mapping.getShortCode(), mapping.getLongUrl(), totalClicks, clicksByDay);
+        List<BreakdownItem> deviceBreakdown = toBreakdown(clickEventRepository.countByDeviceType(mapping.getId()));
+        List<BreakdownItem> browserBreakdown = toBreakdown(clickEventRepository.countByBrowser(mapping.getId()));
+        List<BreakdownItem> referrerBreakdown = toBreakdown(clickEventRepository.countByReferrer(mapping.getId()));
+
+        return new AnalyticsResponse(mapping.getShortCode(), mapping.getLongUrl(), totalClicks, clicksByDay,
+                deviceBreakdown, browserBreakdown, referrerBreakdown);
+    }
+
+    private List<BreakdownItem> toBreakdown(List<Object[]> rows) {
+        return rows.stream()
+                .map(row -> new BreakdownItem((String) row[0], ((Number) row[1]).longValue()))
+                .collect(Collectors.toList());
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (value instanceof Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        if (value instanceof java.util.Date utilDate) {
+            return utilDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        }
+        throw new IllegalStateException("Unexpected date type: " + value.getClass());
     }
 }

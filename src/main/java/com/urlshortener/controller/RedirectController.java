@@ -21,7 +21,7 @@ public class RedirectController {
     public void redirectToOriginalUrl(@PathVariable String shortCode,
                                       HttpServletRequest request,
                                       HttpServletResponse response) throws IOException {
-        String originalUrl = urlService.getOriginalUrl(shortCode, request.getHeader("Referer"), resolveClientIp(request));
+        String originalUrl = urlService.getOriginalUrl(shortCode, request.getHeader("Referer"), resolveClientIp(request), request.getHeader("User-Agent"));
         response.sendRedirect(originalUrl);
     }
 

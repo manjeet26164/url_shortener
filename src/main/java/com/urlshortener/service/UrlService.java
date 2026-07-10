@@ -91,15 +91,15 @@ public class UrlService {
 
     @Transactional
     public String getOriginalUrl(String shortCode) {
-        return getOriginalUrl(shortCode, null, null);
+        return getOriginalUrl(shortCode, null, null, null);
     }
 
     @Transactional
-    public String getOriginalUrl(String shortCode, String referrer, String ipAddress) {
+    public String getOriginalUrl(String shortCode, String referrer, String ipAddress, String userAgent) {
         Optional<String> cachedUrl = urlCacheService.get(shortCode);
         if (cachedUrl.isPresent()) {
             log.info("CACHE HIT for {}", shortCode);
-            urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress);
+            urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
             return cachedUrl.get();
         }
 
@@ -114,7 +114,7 @@ public class UrlService {
         }
 
         urlCacheService.put(mapping);
-        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress);
+        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
 
         return mapping.getLongUrl();
     }

@@ -1,0 +1,450 @@
+diff --git a/frontend/src/pages/AnalyticsPage.jsx b/frontend/src/pages/AnalyticsPage.jsx
+index 84419a0..c9e8000 100644
+--- a/frontend/src/pages/AnalyticsPage.jsx
++++ b/frontend/src/pages/AnalyticsPage.jsx
+@@ -3,14 +3,51 @@ import { useParams, useNavigate } from 'react-router-dom';
+ import {
+   BarChart,
+   Bar,
++  PieChart,
++  Pie,
++  Cell,
+   XAxis,
+   YAxis,
+   CartesianGrid,
+   Tooltip,
++  Legend,
+   ResponsiveContainer,
+ } from 'recharts';
+ import { api } from '../api/api';
+ 
++const PIE_COLORS = ['#22d3ee', '#818cf8', '#f472b6', '#fbbf24', '#34d399', '#f87171'];
++
++function BreakdownPie({ title, data }) {
++  return (
++    <div className="dash-card" style={{ flex: '1 1 300px' }}>
++      <h3>{title}</h3>
++      {!data || data.length === 0 ? (
++        <p>No data yet.</p>
++      ) : (
++        <ResponsiveContainer width="100%" height={260}>
++          <PieChart>
++            <Pie
++              data={data}
++              dataKey="count"
++              nameKey="label"
++              cx="50%"
++              cy="50%"
++              outerRadius={90}
++              label={({ label, percent }) => `${label} ${(percent * 100).toFixed(0)}%`}
++            >
++              {data.map((entry, index) => (
++                <Cell key={entry.label} fill={PIE_COLORS[index % PIE_COLORS.length]} />
++              ))}
++            </Pie>
++            <Tooltip />
++            <Legend />
++          </PieChart>
++        </ResponsiveContainer>
++      )}
++    </div>
++  );
++}
++
+ export default function AnalyticsPage() {
+   const { shortCode } = useParams();
+   const navigate = useNavigate();
+@@ -68,6 +105,13 @@ export default function AnalyticsPage() {
+                 </BarChart>
+               </ResponsiveContainer>
+             )}
++
++            <h2>Breakdown</h2>
++            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
++              <BreakdownPie title="Device type" data={analytics.deviceBreakdown} />
++              <BreakdownPie title="Browser" data={analytics.browserBreakdown} />
++              <BreakdownPie title="Referrer" data={analytics.referrerBreakdown} />
++            </div>
+           </>
+         ) : null}
+       </section>
+diff --git a/src/main/java/com/urlshortener/controller/RedirectController.java b/src/main/java/com/urlshortener/controller/RedirectController.java
+index ea741cd..bc99e2f 100644
+--- a/src/main/java/com/urlshortener/controller/RedirectController.java
++++ b/src/main/java/com/urlshortener/controller/RedirectController.java
+@@ -21,7 +21,10 @@ public class RedirectController {
+     public void redirectToOriginalUrl(@PathVariable String shortCode,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response) throws IOException {
+-        String originalUrl = urlService.getOriginalUrl(shortCode, request.getHeader("Referer"), resolveClientIp(request));
++        String originalUrl = urlService.getOriginalUrl(shortCode,
++                request.getHeader("Referer"),
++                resolveClientIp(request),
++                request.getHeader("User-Agent"));
+         response.sendRedirect(originalUrl);
+     }
+ 
+diff --git a/src/main/java/com/urlshortener/dto/AnalyticsResponse.java b/src/main/java/com/urlshortener/dto/AnalyticsResponse.java
+index 3ffa96d..90379d0 100644
+--- a/src/main/java/com/urlshortener/dto/AnalyticsResponse.java
++++ b/src/main/java/com/urlshortener/dto/AnalyticsResponse.java
+@@ -6,5 +6,8 @@ public record AnalyticsResponse(
+         String shortCode,
+         String longUrl,
+         long totalClicks,
+-        List<DailyClickCount> clicksByDay) {
++        List<DailyClickCount> clicksByDay,
++        List<BreakdownItem> deviceBreakdown,
++        List<BreakdownItem> browserBreakdown,
++        List<BreakdownItem> referrerBreakdown) {
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/urlshortener/dto/BreakdownItem.java b/src/main/java/com/urlshortener/dto/BreakdownItem.java
+new file mode 100644
+index 0000000..1f52826
+--- /dev/null
++++ b/src/main/java/com/urlshortener/dto/BreakdownItem.java
+@@ -0,0 +1,4 @@
++package com.urlshortener.dto;
++
++public record BreakdownItem(String label, long count) {
++}
+diff --git a/src/main/java/com/urlshortener/entity/ClickEvent.java b/src/main/java/com/urlshortener/entity/ClickEvent.java
+index 344011e..af586ec 100644
+--- a/src/main/java/com/urlshortener/entity/ClickEvent.java
++++ b/src/main/java/com/urlshortener/entity/ClickEvent.java
+@@ -31,6 +31,14 @@ public class ClickEvent {
+ 
+     private String ipAddress;
+ 
++    @Column(name = "device_type")
++    private String deviceType;
++
++    private String browser;
++
+     @Column(name = "operating_system")
++    private String operatingSystem;
++
+     @PrePersist
+     void prePersist() {
+         if (clickedAt == null) {
+@@ -49,6 +57,18 @@ public class ClickEvent {
+         this.ipAddress = ipAddress;
+     }
+ 
++    public ClickEvent(Long id, UrlMapping urlMapping, Instant clickedAt, String referrer, String ipAddress,
++                       String deviceType, String browser, String operatingSystem) {
++        this.id = id;
++        this.urlMapping = urlMapping;
++        this.clickedAt = clickedAt;
++        this.referrer = referrer;
++        this.ipAddress = ipAddress;
++        this.deviceType = deviceType;
++        this.browser = browser;
++        this.operatingSystem = operatingSystem;
++    }
++
+     public Long getId() {
+         return id;
+     }
+@@ -88,4 +108,28 @@ public class ClickEvent {
+     public void setIpAddress(String ipAddress) {
+         this.ipAddress = ipAddress;
+     }
++
++    public String getDeviceType() {
++        return deviceType;
++    }
++
++    public void setDeviceType(String deviceType) {
++        this.deviceType = deviceType;
++    }
++
++    public String getBrowser() {
++        return browser;
++    }
++
++    public void setBrowser(String browser) {
++        this.browser = browser;
++    }
++
++    public String getOperatingSystem() {
++        return operatingSystem;
++    }
++
++    public void setOperatingSystem(String operatingSystem) {
++        this.operatingSystem = operatingSystem;
++    }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/urlshortener/repository/ClickEventRepository.java b/src/main/java/com/urlshortener/repository/ClickEventRepository.java
+index 1d7a242..275506d 100644
+--- a/src/main/java/com/urlshortener/repository/ClickEventRepository.java
++++ b/src/main/java/com/urlshortener/repository/ClickEventRepository.java
+@@ -19,5 +19,33 @@ public interface ClickEventRepository extends JpaRepository<ClickEvent, Long> {
+         ORDER BY clickDay ASC
+         """, nativeQuery = true)
+     List<Object[]> countClicksGroupedByDay(@Param("urlMappingId") Long urlMappingId);
++
++    @Query(value = """
++        SELECT COALESCE(device_type, 'Unknown') AS label, COUNT(*) AS clickCount
++        FROM click_events
++        WHERE url_mapping_id = :urlMappingId
++        GROUP BY device_type
++        ORDER BY clickCount DESC
++        """, nativeQuery = true)
++    List<Object[]> countClicksGroupedByDeviceType(@Param("urlMappingId") Long urlMappingId);
++
++    @Query(value = """
++        SELECT COALESCE(browser, 'Unknown') AS label, COUNT(*) AS clickCount
++        FROM click_events
++        WHERE url_mapping_id = :urlMappingId
++        GROUP BY browser
++        ORDER BY clickCount DESC
++        """, nativeQuery = true)
++    List<Object[]> countClicksGroupedByBrowser(@Param("urlMappingId") Long urlMappingId);
++
++    @Query(value = """
++        SELECT COALESCE(NULLIF(referrer, ''), 'Direct') AS label, COUNT(*) AS clickCount
++        FROM click_events
++        WHERE url_mapping_id = :urlMappingId
++        GROUP BY COALESCE(NULLIF(referrer, ''), 'Direct')
++        ORDER BY clickCount DESC
++        """, nativeQuery = true)
++    List<Object[]> countClicksGroupedByReferrer(@Param("urlMappingId") Long urlMappingId);
++
+     void deleteByUrlMapping(UrlMapping urlMapping);
+ }
+diff --git a/src/main/java/com/urlshortener/service/AnalyticsService.java b/src/main/java/com/urlshortener/service/AnalyticsService.java
+index abe6220..e7f741f 100644
+--- a/src/main/java/com/urlshortener/service/AnalyticsService.java
++++ b/src/main/java/com/urlshortener/service/AnalyticsService.java
+@@ -1,6 +1,7 @@
+ package com.urlshortener.service;
+ 
+ import com.urlshortener.dto.AnalyticsResponse;
++import com.urlshortener.dto.BreakdownItem;
+ import com.urlshortener.dto.DailyClickCount;
+ import com.urlshortener.entity.UrlMapping;
+ import com.urlshortener.exception.UrlNotFoundException;
+@@ -44,6 +45,20 @@ public class AnalyticsService {
+ 
+         long totalClicks = mapping.getClickCount() == null ? 0L : mapping.getClickCount();
+ 
+-        return new AnalyticsResponse(mapping.getShortCode(), mapping.getLongUrl(), totalClicks, clicksByDay);
++        List<BreakdownItem> deviceBreakdown = toBreakdown(
++                clickEventRepository.countClicksGroupedByDeviceType(mapping.getId()));
++        List<BreakdownItem> browserBreakdown = toBreakdown(
++                clickEventRepository.countClicksGroupedByBrowser(mapping.getId()));
++        List<BreakdownItem> referrerBreakdown = toBreakdown(
++                clickEventRepository.countClicksGroupedByReferrer(mapping.getId()));
++
++        return new AnalyticsResponse(mapping.getShortCode(), mapping.getLongUrl(), totalClicks, clicksByDay,
++                deviceBreakdown, browserBreakdown, referrerBreakdown);
++    }
++
++    private List<BreakdownItem> toBreakdown(List<Object[]> rawResults) {
++        return rawResults.stream()
++                .map(row -> new BreakdownItem((String) row[0], ((Number) row[1]).longValue()))
++                .collect(Collectors.toList());
+     }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/urlshortener/service/UrlRedirectAuditService.java b/src/main/java/com/urlshortener/service/UrlRedirectAuditService.java
+index 60e2a4e..da46931 100644
+--- a/src/main/java/com/urlshortener/service/UrlRedirectAuditService.java
++++ b/src/main/java/com/urlshortener/service/UrlRedirectAuditService.java
+@@ -4,6 +4,7 @@ import com.urlshortener.entity.ClickEvent;
+ import com.urlshortener.entity.UrlMapping;
+ import com.urlshortener.repository.ClickEventRepository;
+ import com.urlshortener.repository.UrlMappingRepository;
++import com.urlshortener.util.UserAgentParser;
+ import java.util.Optional;
+ import org.springframework.scheduling.annotation.Async;
+ import org.springframework.stereotype.Service;
+@@ -24,6 +25,12 @@ public class UrlRedirectAuditService {
+     @Async
+     @Transactional
+     public void recordRedirect(String shortCode, String referrer, String ipAddress) {
++        recordRedirect(shortCode, referrer, ipAddress, null);
++    }
++
++    @Async
++    @Transactional
++    public void recordRedirect(String shortCode, String referrer, String ipAddress, String userAgent) {
+         Optional<UrlMapping> mappingOptional = urlMappingRepository.findByShortCode(shortCode);
+         if (mappingOptional.isEmpty()) {
+             return;
+@@ -37,6 +44,9 @@ public class UrlRedirectAuditService {
+         clickEvent.setUrlMapping(mapping);
+         clickEvent.setReferrer(referrer);
+         clickEvent.setIpAddress(ipAddress);
++        clickEvent.setDeviceType(UserAgentParser.parseDeviceType(userAgent));
++        clickEvent.setBrowser(UserAgentParser.parseBrowser(userAgent));
++        clickEvent.setOperatingSystem(UserAgentParser.parseOperatingSystem(userAgent));
+         clickEventRepository.save(clickEvent);
+     }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/urlshortener/service/UrlService.java b/src/main/java/com/urlshortener/service/UrlService.java
+index 8e388ad..edf3cec 100644
+--- a/src/main/java/com/urlshortener/service/UrlService.java
++++ b/src/main/java/com/urlshortener/service/UrlService.java
+@@ -96,10 +96,15 @@ public class UrlService {
+ 
+     @Transactional
+     public String getOriginalUrl(String shortCode, String referrer, String ipAddress) {
++        return getOriginalUrl(shortCode, referrer, ipAddress, null);
++    }
++
++    @Transactional
++    public String getOriginalUrl(String shortCode, String referrer, String ipAddress, String userAgent) {
+         Optional<String> cachedUrl = urlCacheService.get(shortCode);
+         if (cachedUrl.isPresent()) {
+             log.info("CACHE HIT for {}", shortCode);
+-            urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress);
++            recordRedirect(shortCode, referrer, ipAddress, userAgent);
+             return cachedUrl.get();
+         }
+ 
+@@ -114,11 +119,19 @@ public class UrlService {
+         }
+ 
+         urlCacheService.put(mapping);
+-        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress);
++        recordRedirect(shortCode, referrer, ipAddress, userAgent);
+ 
+         return mapping.getLongUrl();
+     }
+ 
++    private void recordRedirect(String shortCode, String referrer, String ipAddress, String userAgent) {
++        if (userAgent != null) {
++            urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
++        } else {
++            urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress);
++        }
++    }
++
+     @Transactional(readOnly = true)
+     public List<UrlMapping> getUserUrls() {
+         Optional<User> currentUser = currentUser();
+diff --git a/src/main/java/com/urlshortener/util/UserAgentParser.java b/src/main/java/com/urlshortener/util/UserAgentParser.java
+new file mode 100644
+index 0000000..448c8e3
+--- /dev/null
++++ b/src/main/java/com/urlshortener/util/UserAgentParser.java
+@@ -0,0 +1,93 @@
++package com.urlshortener.util;
++
++import java.util.regex.Pattern;
++
++/**
++ * Lightweight, dependency-free User-Agent parser.
++ * Uses ordered regex checks (most specific first) to classify
++ * device type, browser, and operating system.
++ * Not exhaustive - unmatched agents fall back to "Other" / "Unknown".
++ */
++public final class UserAgentParser {
++
++    private static final String UNKNOWN = "Unknown";
++    private static final String OTHER = "Other";
++
++    private static final Pattern TABLET = Pattern.compile("iPad|Tablet|Nexus 7|Nexus 9|Nexus 10|KFAPWI", Pattern.CASE_INSENSITIVE);
++    private static final Pattern MOBILE = Pattern.compile("Mobi|Android|iPhone|iPod|Windows Phone|BlackBerry", Pattern.CASE_INSENSITIVE);
++
++    private static final Pattern EDGE = Pattern.compile("Edg(?:e|A|iOS)?/", Pattern.CASE_INSENSITIVE);
++    private static final Pattern OPERA = Pattern.compile("OPR/|Opera", Pattern.CASE_INSENSITIVE);
++    private static final Pattern FIREFOX = Pattern.compile("Firefox/", Pattern.CASE_INSENSITIVE);
++    private static final Pattern CHROME = Pattern.compile("Chrome/|CriOS/", Pattern.CASE_INSENSITIVE);
++    private static final Pattern SAFARI = Pattern.compile("Safari/", Pattern.CASE_INSENSITIVE);
++
++    private static final Pattern WINDOWS = Pattern.compile("Windows", Pattern.CASE_INSENSITIVE);
++    private static final Pattern ANDROID = Pattern.compile("Android", Pattern.CASE_INSENSITIVE);
++    private static final Pattern IOS = Pattern.compile("iPhone|iPad|iPod", Pattern.CASE_INSENSITIVE);
++    private static final Pattern MAC_OS = Pattern.compile("Mac OS X|Macintosh", Pattern.CASE_INSENSITIVE);
++    private static final Pattern LINUX = Pattern.compile("Linux", Pattern.CASE_INSENSITIVE);
++
++    private UserAgentParser() {
++    }
++
++    public static String parseDeviceType(String userAgent) {
++        if (userAgent == null || userAgent.isBlank()) {
++            return UNKNOWN;
++        }
++        if (TABLET.matcher(userAgent).find()) {
++            return "Tablet";
++        }
++        if (MOBILE.matcher(userAgent).find()) {
++            return "Mobile";
++        }
++        return "Desktop";
++    }
++
++    public static String parseBrowser(String userAgent) {
++        if (userAgent == null || userAgent.isBlank()) {
++            return UNKNOWN;
++        }
++        // Order matters: Edge/Opera identify themselves while also carrying
++        // Chrome/Safari tokens, so check the more specific ones first.
++        if (EDGE.matcher(userAgent).find()) {
++            return "Edge";
++        }
++        if (OPERA.matcher(userAgent).find()) {
++            return "Opera";
++        }
++        if (FIREFOX.matcher(userAgent).find()) {
++            return "Firefox";
++        }
++        if (CHROME.matcher(userAgent).find()) {
++            return "Chrome";
++        }
++        if (SAFARI.matcher(userAgent).find()) {
++            return "Safari";
++        }
++        return OTHER;
++    }
++
++    public static String parseOperatingSystem(String userAgent) {
++        if (userAgent == null || userAgent.isBlank()) {
++            return UNKNOWN;
++        }
++        // iOS check must precede macOS since iPhone/iPad UAs also mention "Mac OS X".
++        if (IOS.matcher(userAgent).find()) {
++            return "iOS";
++        }
++        if (ANDROID.matcher(userAgent).find()) {
++            return "Android";
++        }
++        if (WINDOWS.matcher(userAgent).find()) {
++            return "Windows";
++        }
++        if (MAC_OS.matcher(userAgent).find()) {
++            return "macOS";
++        }
++        if (LINUX.matcher(userAgent).find()) {
++            return "Linux";
++        }
++        return OTHER;
++    }
++}
+diff --git a/src/test/java/com/urlshortener/controller/RedirectControllerTest.java b/src/test/java/com/urlshortener/controller/RedirectControllerTest.java
+index da9328e..452672a 100644
+--- a/src/test/java/com/urlshortener/controller/RedirectControllerTest.java
++++ b/src/test/java/com/urlshortener/controller/RedirectControllerTest.java
+@@ -20,11 +20,14 @@ class RedirectControllerTest {
+ 
+         when(request.getHeader("Referer")).thenReturn("https://referrer.example");
+         when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.10, 10.0.0.2");
+-        when(urlService.getOriginalUrl("abc123", "https://referrer.example", "203.0.113.10")).thenReturn("https://example.com");
++        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0 Safari/537.36");
++        when(urlService.getOriginalUrl("abc123", "https://referrer.example", "203.0.113.10",
++                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0 Safari/537.36")).thenReturn("https://example.com");
+ 
+         controller.redirectToOriginalUrl("abc123", request, response);
+ 
+-        verify(urlService).getOriginalUrl("abc123", "https://referrer.example", "203.0.113.10");
++        verify(urlService).getOriginalUrl("abc123", "https://referrer.example", "203.0.113.10",
++                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0 Safari/537.36");
+         verify(response).sendRedirect("https://example.com");
+     }
+ }

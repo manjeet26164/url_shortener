@@ -31,6 +31,12 @@ public class ClickEvent {
 
     private String ipAddress;
 
+    private String deviceType;
+
+    private String browser;
+
+    private String operatingSystem;
+
     @PrePersist
     void prePersist() {
         if (clickedAt == null) {
@@ -87,5 +93,29 @@ public class ClickEvent {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public String getBrowser() {
+        return browser;
+    }
+
+    public void setBrowser(String browser) {
+        this.browser = browser;
+    }
+
+    public String getOperatingSystem() {
+        return operatingSystem;
+    }
+
+    public void setOperatingSystem(String operatingSystem) {
+        this.operatingSystem = operatingSystem;
     }
 }
