@@ -9,5 +9,6 @@ public record CreateUrlRequest(
         @URL(message = "longUrl must be a valid URL")
         String longUrl,
         String customAlias,
-        Instant expiresAt) {
+        Instant expiresAt,
+        String password) {
 }

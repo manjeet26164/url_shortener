@@ -27,13 +27,13 @@ class UrlControllerTest {
         mapping.setLongUrl("https://example.com");
         mapping.setCreatedAt(Instant.parse("2026-07-06T00:00:00Z"));
         mapping.setClickCount(0L);
-        when(urlService.createShortUrl(any(), any(), any())).thenReturn(mapping);
+        when(urlService.createShortUrl(any(), any(), any(), any())).thenReturn(mapping);
         when(request.getScheme()).thenReturn("http");
         when(request.getServerName()).thenReturn("localhost");
         when(request.getServerPort()).thenReturn(8080);
         when(request.getContextPath()).thenReturn("");
 
-        var response = controller.createShortUrl(new CreateUrlRequest("https://example.com", null, null), request);
+        var response = controller.createShortUrl(new CreateUrlRequest("https://example.com", null, null, null), request);
 
         assertEquals(201, response.getStatusCode().value());
         assertEquals(10L, response.getBody().id());

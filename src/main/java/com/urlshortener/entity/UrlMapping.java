@@ -51,6 +51,9 @@ public class UrlMapping {
     @Column(nullable = false)
     private Long clickCount = 0L;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) {
@@ -138,5 +141,17 @@ public class UrlMapping {
 
     public void setClickCount(Long clickCount) {
         this.clickCount = clickCount;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public boolean isPasswordProtected() {
+        return passwordHash != null && !passwordHash.isBlank();
     }
 }

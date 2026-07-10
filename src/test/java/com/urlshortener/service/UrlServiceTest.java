@@ -56,6 +56,9 @@ class UrlServiceTest {
     @Mock
     private RateLimiterService rateLimiterService;
 
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UrlService urlService;
 
@@ -75,7 +78,7 @@ class UrlServiceTest {
         when(urlMappingRepository.existsByCustomAlias("myAlias")).thenReturn(false);
         when(urlMappingRepository.save(any(UrlMapping.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UrlMapping mapping = urlService.createShortUrl("https://example.com", "myAlias", null);
+        UrlMapping mapping = urlService.createShortUrl("https://example.com", "myAlias", null, null);
 
         assertEquals("myAlias", mapping.getShortCode());
         assertEquals("myAlias", mapping.getCustomAlias());
@@ -93,7 +96,7 @@ class UrlServiceTest {
         });
         when(urlEncodingService.encode(42L)).thenReturn("g");
 
-        UrlMapping mapping = urlService.createShortUrl("https://example.com", null, null);
+        UrlMapping mapping = urlService.createShortUrl("https://example.com", null, null, null);
 
         assertEquals(42L, mapping.getId());
         assertEquals("g", mapping.getShortCode());
@@ -130,10 +133,10 @@ class UrlServiceTest {
         mapping.setClickCount(2L);
         when(urlMappingRepository.findByShortCode("abc")).thenReturn(Optional.of(mapping));
 
-        String originalUrl = urlService.getOriginalUrl("abc", "https://referrer.example", "127.0.0.1");
+        String originalUrl = urlService.getOriginalUrl("abc", "https://referrer.example", "127.0.0.1", null);
 
         assertEquals("https://example.com", originalUrl);
-        verify(urlRedirectAuditService).recordRedirect("abc", "https://referrer.example", "127.0.0.1");
+        verify(urlRedirectAuditService).recordRedirect("abc", "https://referrer.example", "127.0.0.1", null);
     }
 
     @Test
@@ -155,7 +158,7 @@ class UrlServiceTest {
 
     @Test
     void invalidAliasThrowsException() {
-        assertThrows(InvalidAliasException.class, () -> urlService.createShortUrl("https://example.com", "bad alias", null));
+        assertThrows(InvalidAliasException.class, () -> urlService.createShortUrl("https://example.com", "bad alias", null, null));
     }
 
     @Test
@@ -176,7 +179,7 @@ class UrlServiceTest {
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken("owner@example.com", "n/a", List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 
-        UrlMapping mapping = urlService.createShortUrl("https://example.com", null, null);
+        UrlMapping mapping = urlService.createShortUrl("https://example.com", null, null,null);
 
         assertEquals(user, mapping.getUser());
         verify(rateLimiterService).checkCreateLimit(user);
@@ -197,7 +200,7 @@ class UrlServiceTest {
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken("owner@example.com", "n/a", List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 
-        assertThrows(RateLimitExceededException.class, () -> urlService.createShortUrl("https://example.com", null, null));
+        assertThrows(RateLimitExceededException.class, () -> urlService.createShortUrl("https://example.com", null, null, null));
         org.mockito.Mockito.verify(urlMappingRepository, never()).save(any(UrlMapping.class));
     }
 

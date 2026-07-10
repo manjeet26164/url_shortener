@@ -30,6 +30,16 @@ public class GlobalExceptionHandler {
         return problemDetail(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage());
     }
 
+    @ExceptionHandler(PasswordRequiredException.class)
+    public ProblemDetail handlePasswordRequiredException(PasswordRequiredException exception) {
+        return problemDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ProblemDetail handleInvalidPasswordException(InvalidPasswordException exception) {
+        return problemDetail(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationException(MethodArgumentNotValidException exception) {
         String message = exception.getBindingResult().getFieldErrors().stream()

@@ -9,5 +9,6 @@ public record UrlResponse(
         String fullShortUrl,
         Instant createdAt,
         Instant expiresAt,
-        Long clickCount) {
+        Long clickCount,
+        boolean passwordProtected) {
 }

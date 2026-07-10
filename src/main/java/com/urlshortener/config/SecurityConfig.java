@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/{shortCode}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/urls/*/verify-password").permitAll()
                         .requestMatchers("/api/urls/**").authenticated()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())

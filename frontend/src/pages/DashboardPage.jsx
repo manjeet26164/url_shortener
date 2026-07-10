@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [urls, setUrls] = useState([]);
   const [longUrl, setLongUrl] = useState('');
   const [alias, setAlias] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -39,9 +40,10 @@ export default function DashboardPage() {
     setError('');
 
     try {
-      await api.post('/urls', { longUrl, alias: alias || undefined });
+      await api.post('/urls', { longUrl, customAlias: alias || undefined, password: password || undefined });
       setLongUrl('');
       setAlias('');
+      setPassword('');
       await loadUrls();
     } catch (requestError) {
       setError(requestError?.response?.data?.detail || requestError?.response?.data?.message || 'Could not shorten URL');
@@ -113,6 +115,16 @@ export default function DashboardPage() {
             />
           </label>
 
+         <label>
+            Password (optional)
+            <input
+              type="password"
+              placeholder="Leave blank for no protection"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+
           <button type="submit" disabled={creating}>
             {creating ? 'Shortening...' : 'Shorten'}
           </button>
@@ -146,6 +158,7 @@ export default function DashboardPage() {
                       <a href={getShortUrl(item)} target="_blank" rel="noreferrer">
                         {getShortUrl(item)}
                       </a>
+                      {item.passwordProtected ? <span title="Password protected"> 🔒</span> : null}
                     </td>
                     <td>{item.longUrl}</td>
                     <td>{item.clicks}</td>

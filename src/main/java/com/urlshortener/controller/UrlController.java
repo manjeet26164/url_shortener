@@ -1,7 +1,9 @@
 package com.urlshortener.controller;
 
 import com.urlshortener.dto.CreateUrlRequest;
+import com.urlshortener.dto.UnlockResponse;
 import com.urlshortener.dto.UrlResponse;
+import com.urlshortener.dto.VerifyPasswordRequest;
 import com.urlshortener.entity.UrlMapping;
 import com.urlshortener.service.UrlService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,8 +32,20 @@ public class UrlController {
     @PostMapping
     public ResponseEntity<UrlResponse> createShortUrl(@Valid @RequestBody CreateUrlRequest request,
                                                       HttpServletRequest httpServletRequest) {
-        UrlMapping mapping = urlService.createShortUrl(request.longUrl(), request.customAlias(), request.expiresAt());
+        UrlMapping mapping = urlService.createShortUrl(request.longUrl(), request.customAlias(), request.expiresAt(),
+                request.password());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(mapping, httpServletRequest));
+    }
+
+    @PostMapping("/{shortCode}/verify-password")
+    public ResponseEntity<UnlockResponse> verifyPassword(@PathVariable String shortCode,
+            @Valid @RequestBody VerifyPasswordRequest request,
+            HttpServletRequest httpServletRequest) {
+        String longUrl = urlService.unlockWithPassword(shortCode, request.password(),
+                httpServletRequest.getHeader("Referer"),
+                httpServletRequest.getRemoteAddr(),
+                httpServletRequest.getHeader("User-Agent"));
+        return ResponseEntity.ok(new UnlockResponse(longUrl));
     }
 
     @GetMapping
@@ -72,7 +86,7 @@ public class UrlController {
                 fullShortUrl,
                 mapping.getCreatedAt(),
                 mapping.getExpiresAt(),
-                mapping.getClickCount());
+                mapping.getClickCount(),
+                mapping.isPasswordProtected());
     }
-
 }

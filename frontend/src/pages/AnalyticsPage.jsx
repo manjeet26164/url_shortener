@@ -3,13 +3,50 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { api } from '../api/api';
+
+const PIE_COLORS = ['#22d3ee', '#818cf8', '#f472b6', '#fbbf24', '#34d399', '#f87171'];
+
+function BreakdownPie({ title, data }) {
+  return (
+    <div className="dash-card" style={{ flex: '1 1 300px' }}>
+      <h3>{title}</h3>
+      {!data || data.length === 0 ? (
+        <p>No data yet.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={260}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="count"
+              nameKey="label"
+              cx="50%"
+              cy="50%"
+              outerRadius={90}
+              label={({ label, percent }) => `${label} ${(percent * 100).toFixed(0)}%`}
+            >
+              {data.map((entry, index) => (
+                <Cell key={entry.label} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const { shortCode } = useParams();
@@ -68,6 +105,13 @@ export default function AnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
             )}
+
+            <h2>Breakdown</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+              <BreakdownPie title="Device type" data={analytics.deviceBreakdown} />
+              <BreakdownPie title="Browser" data={analytics.browserBreakdown} />
+              <BreakdownPie title="Referrer" data={analytics.referrerBreakdown} />
+            </div>
           </>
         ) : null}
       </section>

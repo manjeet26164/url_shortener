@@ -1,9 +1,10 @@
 package com.urlshortener.service;
 
-import com.urlshortener.entity.ClickEvent;
 import com.urlshortener.entity.UrlMapping;
 import com.urlshortener.entity.User;
 import com.urlshortener.exception.InvalidAliasException;
+import com.urlshortener.exception.InvalidPasswordException;
+import com.urlshortener.exception.PasswordRequiredException;
 import com.urlshortener.exception.RateLimitExceededException;
 import com.urlshortener.exception.UrlExpiredException;
 import com.urlshortener.exception.UrlNotFoundException;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -38,6 +40,7 @@ public class UrlService {
     private final UrlCacheService urlCacheService;
     private final UrlRedirectAuditService urlRedirectAuditService;
     private final RateLimiterService rateLimiterService;
+    private final PasswordEncoder passwordEncoder;
 
     public UrlService(UrlMappingRepository urlMappingRepository,
             ClickEventRepository clickEventRepository,
@@ -45,7 +48,8 @@ public class UrlService {
             UserRepository userRepository,
             UrlCacheService urlCacheService,
             UrlRedirectAuditService urlRedirectAuditService,
-            RateLimiterService rateLimiterService) {
+            RateLimiterService rateLimiterService,
+            PasswordEncoder passwordEncoder) {
         this.urlMappingRepository = urlMappingRepository;
         this.clickEventRepository = clickEventRepository;
         this.urlEncodingService = urlEncodingService;
@@ -53,11 +57,13 @@ public class UrlService {
         this.urlCacheService = urlCacheService;
         this.urlRedirectAuditService = urlRedirectAuditService;
         this.rateLimiterService = rateLimiterService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
-    public UrlMapping createShortUrl(String longUrl, String customAlias, Instant expiresAt) {
+    public UrlMapping createShortUrl(String longUrl, String customAlias, Instant expiresAt, String password) {
         currentUser().ifPresent(rateLimiterService::checkCreateLimit);
+        String passwordHash = hashPassword(password);
 
         if (customAlias != null && !customAlias.isBlank()) {
             validateCustomAlias(customAlias);
@@ -68,9 +74,10 @@ public class UrlService {
             mapping.setCustomAlias(customAlias);
             mapping.setExpiresAt(expiresAt);
             mapping.setClickCount(0L);
+            mapping.setPasswordHash(passwordHash);
             currentUser().ifPresent(mapping::setUser);
             UrlMapping saved = urlMappingRepository.save(mapping);
-            urlCacheService.put(saved);
+            cacheIfUnprotected(saved);
             return saved;
         }
 
@@ -79,14 +86,28 @@ public class UrlService {
         placeholder.setShortCode("pending-" + UUID.randomUUID());
         placeholder.setExpiresAt(expiresAt);
         placeholder.setClickCount(0L);
+        placeholder.setPasswordHash(passwordHash);
         currentUser().ifPresent(placeholder::setUser);
 
         UrlMapping saved = urlMappingRepository.save(placeholder);
         String generatedShortCode = urlEncodingService.encode(saved.getId());
         saved.setShortCode(generatedShortCode);
         UrlMapping persisted = urlMappingRepository.save(saved);
-        urlCacheService.put(persisted);
+        cacheIfUnprotected(persisted);
         return persisted;
+    }
+
+    private String hashPassword(String password) {
+        if (password == null || password.isBlank()) {
+            return null;
+        }
+        return passwordEncoder.encode(password);
+    }
+
+    private void cacheIfUnprotected(UrlMapping mapping) {
+        if (!mapping.isPasswordProtected()) {
+            urlCacheService.put(mapping);
+        }
     }
 
     @Transactional
@@ -104,6 +125,32 @@ public class UrlService {
         }
 
         log.info("CACHE MISS for {}", shortCode);
+        UrlMapping mapping = findActiveMapping(shortCode);
+
+        if (mapping.isPasswordProtected()) {
+            throw new PasswordRequiredException(shortCode);
+        }
+
+        urlCacheService.put(mapping);
+        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
+
+        return mapping.getLongUrl();
+    }
+
+    @Transactional
+    public String unlockWithPassword(String shortCode, String rawPassword, String referrer, String ipAddress,
+            String userAgent) {
+        UrlMapping mapping = findActiveMapping(shortCode);
+
+        if (!mapping.isPasswordProtected() || !passwordEncoder.matches(rawPassword, mapping.getPasswordHash())) {
+            throw new InvalidPasswordException("Incorrect password for short URL: " + shortCode);
+        }
+
+        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
+        return mapping.getLongUrl();
+    }
+
+    private UrlMapping findActiveMapping(String shortCode) {
         UrlMapping mapping = urlMappingRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException("Short URL not found: " + shortCode));
 
@@ -113,10 +160,7 @@ public class UrlService {
             throw new UrlExpiredException("Short URL has expired: " + shortCode);
         }
 
-        urlCacheService.put(mapping);
-        urlRedirectAuditService.recordRedirect(shortCode, referrer, ipAddress, userAgent);
-
-        return mapping.getLongUrl();
+        return mapping;
     }
 
     @Transactional(readOnly = true)
